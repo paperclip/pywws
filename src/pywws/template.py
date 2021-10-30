@@ -576,10 +576,10 @@ class Template(object):
             line = ''
 
     def make_text(self, template_file, live_data=None):
-        result = u''
+        result = []
         for text in self.process(live_data, template_file):
-            result += text
-        return result
+            result.append(text)
+        return u"".join(result)
 
     def make_file(self, template_file, output_file, live_data=None):
         text = self.make_text(template_file, live_data)
