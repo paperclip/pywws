@@ -24,3 +24,6 @@ src/doc/api/pywws.*.rst
 # Compiled language files
 *.mo
 *.stackdump
+
+# IDEs
+.vscode/
