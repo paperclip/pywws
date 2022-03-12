@@ -215,8 +215,11 @@ class WindFilter(object):
         if self.Ve is None:
             self.Ve = 0.0
         if isinstance(direction, int):
-            self.Ve -= speed * sin_LUT[direction]
-            self.Vn -= speed * cos_LUT[direction]
+            try:
+                self.Ve -= speed * sin_LUT[direction]
+                self.Vn -= speed * cos_LUT[direction]
+            except Exception as ex:
+                logger.exception("Diration invalid: %d!" % direction)
         else:
             direction = math.radians(float(direction) * 22.5)
             self.Ve -= speed * math.sin(direction)
