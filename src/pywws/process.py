@@ -194,9 +194,29 @@ class WindFilter(object):
         self.last_idx = None
 
     def add(self, data):
+        """
+        @return True for valid data
+        """
         speed = data['wind_ave']
         if speed is None:
-            return
+            return False
+        direction = data['wind_dir']
+        if direction is None:
+            return False
+        if self.Ve is None:
+            self.Ve = 0.0
+        if isinstance(direction, int):
+            try:
+                self.Ve -= speed * sin_LUT[direction]
+                self.Vn -= speed * cos_LUT[direction]
+            except Exception as ex:
+                logger.exception("Direction invalid: %d!" % direction)
+                return False
+        else:
+            direction = math.radians(float(direction) * 22.5)
+            self.Ve -= speed * math.sin(direction)
+            self.Vn -= speed * math.cos(direction)
+
         if self.last_idx and self.decay != 1.0:
             interval = data['idx'] - self.last_idx
             assert interval.days == 0
@@ -209,21 +229,7 @@ class WindFilter(object):
         speed = speed * self.weight
         self.total += speed
         self.total_weight += self.weight
-        direction = data['wind_dir']
-        if direction is None:
-            return
-        if self.Ve is None:
-            self.Ve = 0.0
-        if isinstance(direction, int):
-            try:
-                self.Ve -= speed * sin_LUT[direction]
-                self.Vn -= speed * cos_LUT[direction]
-            except Exception as ex:
-                logger.exception("Diration invalid: %d!" % direction)
-        else:
-            direction = math.radians(float(direction) * 22.5)
-            self.Ve -= speed * math.sin(direction)
-            self.Vn -= speed * math.cos(direction)
+        return True
 
     def result(self):
         if self.total_weight == 0.0:
@@ -254,8 +260,27 @@ class HourAcc(object):
         self.retval = {}
 
     def add_raw(self, data):
+        """
+        @param data: Map of a single calibrated weather reading:
+         {'idx': '2017-02-19 13:54:03', 'delay': 30, 'hum_in': 54, 'temp_in': 18.6, 'hum_out': 69, 'temp_out': 11.6,
+          'abs_pressure': 1004.7, 'rel_pressure': 1012.9, 'wind_ave': 0.7, 'wind_gust': 1.0, 'wind_dir': 12.0, 'rain': 104.7, 
+          'status': {'lost_connection': False, 'rain_overflow': False}}
+        """
         idx = data['idx']
-        self.wind_fil.add(data)
+        temp_out = data.get("temp_out", None)
+
+        if temp_out is None:
+            logger.error("Ignoring missing temp_out: %s", repr(data))
+            return
+
+        if temp_out < -50 or temp_out > 50:
+            logger.error("Ignoring temperature outside -50 - 50 range: %s", repr(data))
+            return
+
+        if not self.wind_fil.add(data):
+            logger.error("Ignoring invalid wind direction: %s", repr(data))
+            return
+
         wind_gust = data['wind_gust']
         if wind_gust is not None and wind_gust > self.wind_gust[0]:
             self.wind_gust = (wind_gust, idx)

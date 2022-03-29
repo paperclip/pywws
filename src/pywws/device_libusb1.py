@@ -98,7 +98,7 @@ class USBDevice(object):
         :rtype: list(int)
 
         """
-        result = self.dev.bulkRead(0x81, size, timeout=1200)
+        result = self.dev.bulkRead(0x81, size, timeout=1800)
         if not result or len(result) < size:
             raise IOError('pywws.device_libusb1.USBDevice.read_data failed')
         # Python2 libusb1 version 1.5 and earlier returns a string
@@ -129,7 +129,7 @@ class USBDevice(object):
             libusb1.LIBUSB_ENDPOINT_OUT | libusb1.LIBUSB_TYPE_CLASS |
             libusb1.LIBUSB_RECIPIENT_INTERFACE,
             libusb1.LIBUSB_REQUEST_SET_CONFIGURATION,
-            0x200, 0, str_buf, timeout=50)
+            0x200, 0, str_buf, timeout=200)
         if result != len(buf):
             raise IOError('pywws.device_libusb1.USBDevice.write_data failed')
         return True
