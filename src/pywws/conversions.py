@@ -194,9 +194,14 @@ def dew_point(temp, hum):
     """
     if temp is None or hum is None:
         return None
+    if float(hum) <= 0:
+        print("Humidity invalid:",hum)
+        return None
+    hum = float(hum)
     a = 17.27
     b = 237.7
-    gamma = ((a * temp) / (b + temp)) + math.log(float(hum) / 100.0)
+    log_value = math.log(hum / 100.0)
+    gamma = ((a * temp) / (b + temp)) + log_value
     return (b * gamma) / (a - gamma)
 
 def cadhumidex(temp, humidity):
@@ -270,6 +275,8 @@ def cloud_base(temp, hum):
     if temp is None or hum is None:
         return None
     dew_pt = dew_point(temp, hum)
+    if dew_pt is None:
+        return None
     spread = float(temp) - dew_pt
     return spread * 125.0
 
