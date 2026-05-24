@@ -36,10 +36,24 @@ __doc__ %= __usage__ % ('python -m pywws.version')
 
 import getopt
 import os
-from pkg_resources import resource_filename
 import sys
 
 from pywws import __version__, _release, _commit
+
+
+def resource_filename(package_or_requirement, resource_name):
+    """Return the absolute path to a resource file.
+
+    This is a helper function to find the absolute path to a resource file
+    using pkg_resources if available, or importlib_resources if not.
+    """
+    try:
+        import pkg_resources
+        return pkg_resources.resource_filename(package_or_requirement, resource_name)
+    except ImportError:
+        import importlib_resources
+        ref = importlib_resources.files(package_or_requirement).joinpath(resource_name)
+        return importlib_resources.as_file(ref)
 
 
 def main(argv=None):
@@ -76,10 +90,11 @@ def main(argv=None):
             print('USB:   ', USBDevice.__module__)
         except ImportError:
             print('USB:    missing')
-        example_dir = resource_filename('pywws', 'examples')
-        if os.path.exists(example_dir):
-            print('examples:')
-            print('  ', example_dir)
+
+        with resource_filename('pywws', 'examples') as example_dir:
+            if os.path.exists(example_dir):
+                print('examples:')
+                print('  ', example_dir)
         print('docs:')
         print('   http://pywws.readthedocs.io/')
     return 0

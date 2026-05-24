@@ -126,7 +126,6 @@ import getopt
 import gettext
 import locale
 import os
-import pkg_resources
 import sys
 import time
 
@@ -166,6 +165,21 @@ def set_locale(lang):
     return True
 
 
+def resource_filename(package_or_requirement, resource_name):
+    """Return the absolute path to a resource file.
+
+    This is a helper function to find the absolute path to a resource file
+    using pkg_resources if available, or importlib_resources if not.
+    """
+    try:
+        import pkg_resources
+        return pkg_resources.resource_filename(package_or_requirement, resource_name)
+    except ImportError:
+        import importlib_resources
+        ref = importlib_resources.files(package_or_requirement).joinpath(resource_name)
+        return importlib_resources.as_file(ref)
+
+
 def set_translation(lang):
     """Set the translation used by (some) pywws modules.
 
@@ -191,22 +205,22 @@ def set_translation(lang):
         if '.' in lang:
             lang = lang.split('.')[0]
         langs += [lang, lang[:2]]
-    # get translation object
-    path = pkg_resources.resource_filename('pywws', 'lang')
     codeset = locale.getpreferredencoding()
     if codeset == 'ASCII':
         codeset = 'UTF-8'
-    try:
-        if sys.version_info < (3, 11):
-            translation = gettext.translation(
-                'pywws', path, languages=langs, codeset=codeset)
-        else:
-            translation = gettext.translation('pywws', path, languages=langs)
-        # Python 3 translations don't have a ugettext method
-        if not hasattr(translation, 'ugettext'):
-            translation.ugettext = translation.gettext
-    except IOError:
-        return False
+    # get translation object
+    with resource_filename('pywws', 'lang') as path:
+        try:
+            if sys.version_info < (3, 11):
+                translation = gettext.translation(
+                    'pywws', path, languages=langs, codeset=codeset)
+            else:
+                translation = gettext.translation('pywws', path, languages=langs)
+            # Python 3 translations don't have a ugettext method
+            if not hasattr(translation, 'ugettext'):
+                translation.ugettext = translation.gettext
+        except IOError:
+            return False
     return True
 
 
